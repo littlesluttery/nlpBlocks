@@ -27,11 +27,11 @@ class react_qwen():
 
 
     def prompt_qwen(self,content):
-        system_prompt_t = f"""
-                Use the following format:
+        system_prompt_t = f"""Use the following format:
                 Question: the input question you must answer.
-                Thought:you should always think about waht to do.
-                Action Input: the result to the action.
+                Thought: you should always think about waht to do.
+                Action: the action to take in order, should be one of {self.toool_name}
+                Action Input: the input to the action.
                 Observation: the result of the action...(this Thought/Action Input/Observation can repeat N times.)
                 Thought: I now know the final answer.
                 Final Answer: the final answer to the original input question.
@@ -57,6 +57,7 @@ class react_qwen():
             result_format='message'
         )
         return response
+
     def parser_content(self,out_content):
         return {
             "name":out_content.split("\nAction: ")[1].split("\nAction")[0],
@@ -72,16 +73,13 @@ class react_qwen():
         prompt = self.prompt_qwen(input_p)
         for i in range(0,5):
             res = self.get_response_qwen(prompt)
-            print(res)
-            exit()
-            res_content = res.output_choices[0].message["content"]
-            print(res_content)
+            res_content = res.output.choices[0].message["content"]
             if res_content.find("\nAction: ") != -1:
                 tool_args = self.parser_content(res_content)
                 tool_out = self.tool_chain(tool_args)
                 prompt[1]["content"] = prompt[1]["content"] +res_content+"\nObservation: " + str(tool_out.invoke(tool_args)) + "\nThought:"
             else:
-                prompt[1]["content"] = prompt[1]["content"]
+                prompt[1]["content"] = prompt[1]["content"] +res_content
                 break
         return(prompt[1]["content"])
     
@@ -102,7 +100,9 @@ def exponentiate(base:int,exponent:int) -> int:
     """对底数求指数幂"""
     return base**exponent
 
-tools = [multiply,add,exponentiate]
-chuxing =  react_qwen(tools)
-res = chuxing.invoke("5加7乘以6，然后在求结果的2次幂")
+if __name__ == "__main__":
+    tools = [multiply,add,exponentiate]
+    chuxing =  react_qwen(tools)
+    res = chuxing.invoke("5加7乘以6，然后在求结果的2次幂")
+    print(res)
 
