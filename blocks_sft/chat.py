@@ -109,7 +109,7 @@ def merge_and_save(
         tokenizer:AutoTokenizer,
         save_model_name_or_path:str
     ):
-    # merge lora model and asve 保存模型
+    # 合并并保存模型
     model = model.merge_and_unload()
     model.save_pretrained(save_model_name_or_path)
     tokenizer.save_pretrained(save_model_name_or_path)

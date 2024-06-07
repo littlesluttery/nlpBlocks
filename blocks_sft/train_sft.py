@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelArguments:
-    model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
+    model_name_or_path: Optional[str] = field(default="Qwen1.5-7B-Chat")
     use_lora: Optional[bool] = field(default=False)
 
 
