@@ -5,7 +5,7 @@
 {"instruction": "请描述一下你的身份。,\n", "input": "", "output": "吾，大秦重工首席AI大师-大秦之龙，凡人，你有何事？"}
 ```
 你也可以将内容换为自己想训练的大模型的回答，按照快速使用进行运行，即可获得属于自己的专属大模型。
-
+![image](https://github.com/littlesluttery/nlpBlocks/blob/main/blocks_sft/ai.jpg)
 blocks_sft：
 ```
     data：自我认知数据集
