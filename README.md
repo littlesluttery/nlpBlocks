@@ -19,7 +19,7 @@ langchain-community 0.2.1
 ##### blocks_agent  利用千问接口实现的一些小功能
 ##### blocks_sentence_embeddings 利用千问模型实现embeddings训练
 ##### block_Sft   利用千问模型实现sft
-####3 utils     一些小工具
+##### utils     一些小工具
 
 备注：每个模块都是独立的，适合新手小白学习。
 
