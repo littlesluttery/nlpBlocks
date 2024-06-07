@@ -8,7 +8,7 @@
 
 ![image](https://github.com/littlesluttery/nlpBlocks/blob/main/blocks_sft/ai.jpg)
 
-![image](blocks_sft/ai.jpg)
+
 
 blocks_sft：
 ```
