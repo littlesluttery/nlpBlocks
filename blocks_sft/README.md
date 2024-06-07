@@ -27,4 +27,4 @@ blocks_sft：
 3. 模型合并：python chat.py
 
 4. 启动界面：python app.py
-![alt text](image.png)
+
