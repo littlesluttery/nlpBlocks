@@ -95,7 +95,7 @@ def chat(
         model=model,
         tokenizer=tokenizer,
         text_input=text_input,
-        use_train_model=True,
+        use_train_model=False,
         temp=0.8
     )
     if is_merge_and_save:
