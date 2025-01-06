@@ -1,54 +1,147 @@
+# MQA、GQA和MHA
 import torch
-from torch import nn 
-import torch.functional as F
-import math
+import torch.nn as nn
+import torch.nn.functional as F
+
+class MHA(nn.Module):
+    def __init__(self, embed_dim, num_heads):
+        super(MHA, self).__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
+
+        assert self.head_dim * num_heads == embed_dim, "embed_dim must be divisible by num_heads"
+
+        self.values = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.keys = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.queries = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.fc_out = nn.Linear(embed_dim, embed_dim)
+
+    def forward(self, values, keys, query, mask=None):
+        N = query.shape[0]
+        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
+
+        values = values.reshape(N, value_len, self.num_heads, self.head_dim)
+        keys = keys.reshape(N, key_len, self.num_heads, self.head_dim)
+        queries = query.reshape(N, query_len, self.num_heads, self.head_dim)
+
+        energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys])
+
+        if mask is not None:
+            energy = energy.masked_fill(mask == 0, float("-1e20"))
+
+        attention = torch.softmax(energy / (self.embed_dim ** (1 / 2)), dim=3)
+
+        out = torch.einsum("nhql,nlhd->nqhd", [attention, values]).reshape(
+            N, query_len, self.embed_dim
+        )
+
+        out = self.fc_out(out)
+        return out
+class GQA(nn.Module):
+    def __init__(self, embed_dim, num_heads, num_groups):
+        super(GQA, self).__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.num_groups = num_groups
+        self.head_dim = embed_dim // num_heads
+
+        self.values = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.keys = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.queries = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.fc_out = nn.Linear(embed_dim, embed_dim)
+
+    def forward(self, values, keys, query, mask=None):
+        N = query.shape[0]
+        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
+
+        values = values.reshape(N, value_len, self.num_heads, self.head_dim)
+        keys = keys.reshape(N, key_len, self.num_heads, self.head_dim)
+        queries = query.reshape(N, query_len, self.num_heads, self.head_dim)
+
+        energy = torch.einsum("nqgd,nkgd->nqgk", [queries, keys])
+
+        if mask is not None:
+            energy = energy.masked_fill(mask == 0, float("-1e20"))
+
+        attention = torch.softmax(energy / (self.embed_dim ** (1 / 2)), dim=3)
+
+        out = torch.einsum("nqgk,nkgd->nqgd", [attention, values]).reshape(
+            N, query_len, self.embed_dim
+        )
+
+        out = self.fc_out(out)
+        return out
+
+class MQA(nn.Module):
+    def __init__(self, embed_dim, num_heads):
+        super(MQA, self).__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
+
+        assert self.head_dim * num_heads == embed_dim, "embed_dim must be divisible by num_heads"
+
+        self.values = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.keys = nn.Linear(self.head_dim, self.head_dim, bias=False)
+        self.queries = nn.Linear(embed_dim, num_heads * self.head_dim, bias=False)
+        self.fc_out = nn.Linear(embed_dim, embed_dim)
+
+    def forward(self, values, keys, query, mask=None):
+        N = query.shape[0]
+        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
+
+        values = values.reshape(N, value_len, self.num_heads, self.head_dim)
+        keys = keys.reshape(N, key_len, self.num_heads, self.head_dim)
+        queries = self.queries(query).reshape(N, query_len, self.num_heads, self.head_dim)
+
+        energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys])
+
+        if mask is not None:
+            energy = energy.masked_fill(mask == 0, float("-1e20"))
+
+        attention = torch.softmax(energy / (self.embed_dim ** (1 / 2)), dim=3)
+
+        out = torch.einsum("nhql,nlhd->nqhd", [attention, values]).reshape(
+            N, query_len, self.embed_dim
+        )
+
+        out = self.fc_out(out)
+        return out
+# 构造输入数据
+embed_dim = 4  # 嵌入维度
+num_heads = 2  # 注意力头的数量
+batch_size = 1  # 批次大小
+seq_len = 3   # 序列长度
+
+# 随机生成输入数据
+values = torch.rand(batch_size, seq_len, embed_dim)
+keys = torch.rand(batch_size, seq_len, embed_dim)
+queries = torch.rand(batch_size, seq_len, embed_dim)
+print(queries)
+print(keys)
+print(values)
+
+# 实例化模型
+mha_model = MHA(embed_dim, num_heads)
+# 得到结果
+mha_result = mha_model(values, keys, queries)
+# 打印结果
+print("MHA Result:", mha_result)
+
+mqa_model = MQA(embed_dim, num_heads)
+mqa_result = mqa_model(values, keys, queries)
+print("MQA Result:", mqa_result)
+
+gqa_model = GQA(embed_dim, num_heads, 2)  # 假设我们有两个分组
+gqa_result = gqa_model(values, keys, queries)
+print("GQA Result:", gqa_result)
 
 
-class multi_head_attention(nn.Module):
-    def __init__(self,d_model,n_head) -> None:
-        super(multi_head_attention,self).__init__()
-
-        self.n_head = n_head
-        self.d_model =d_model
-        self.w_q = nn.Linear(d_model,d_model)
-        self.w_k = nn.Linear(d_model,d_model)
-        self.w_v = nn.Linear(d_model,d_model)
-        self.w_combine  = nn.Linear(d_model,d_model)
-        self.softmax = nn.Softmax(dim=-1)
-
-    def forward(self,q,k,v):
-        batch, time, dimension = q.shape
-        n_d = self.d_model // self.n_head
-        q,k,v = self.w_q(q), self.w_k(k), self.w_v(v)
-
-        q = q.view(batch,time, self.n_head,n_d).permute(0,2,1,3)
-        k = k.view(batch,time, self.n_head,n_d).permute(0,2,1,3)
-        v = v.view(batch,time, self.n_head,n_d).permute(0,2,1,3)
-
-        score = q @ k.transpose(2,3) / math.sqrt(n_d)
-        mask = torch.tril(torch.ones(time,time,dtype=bool))
-        score = score.masked_fill(mask==0, float("-inf"))
-        score = self.softmax(score) @ v
-
-        score = score.permute(0,2,1,3).contiguous().view(batch,time,dimension)
-
-        output = self.w_combine(score)
-        return output
 
 
 
 
-if __name__ == "__main__":
-
-    X = torch.randn(128,64,512)
-    print(X.shape)
-
-    d_model = 512
-    n_head = 8
-    attention = multi_head_attention(d_model,n_head)
-    output = attention(X,X,X)
-    print(output)
-    print(output.shape)
 
 
 
