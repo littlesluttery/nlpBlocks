@@ -1,3 +1,5 @@
+import torch
+import torch.nn as nn
 #旋转位置编码
 class Qwen2RotaryEmbedding(nn.Module):
     def __init__(self, dim, max_position_embeddings=2048, base=10000, device=None):
