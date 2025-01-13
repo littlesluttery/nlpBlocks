@@ -1,3 +1,6 @@
+import torch
+import torch.nn as nn
+
 # RMS
 from IPython.display import Image
 Image(filename="./image/rms.png",width=400,height=400)
