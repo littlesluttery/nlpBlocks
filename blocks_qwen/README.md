@@ -14,8 +14,8 @@
 ```
 ##### 3.界面问答
 ```markdown
-# 执行以下操作
-# streamlit run qwen2_webdemo.py --server.address yourip --server.port 20456
+执行以下操作
+streamlit run qwen2_webdemo.py --server.address yourip --server.port 20456
 ```
 ##### 4.o1推理
 ```markdown
